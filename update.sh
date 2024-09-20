@@ -3,7 +3,7 @@
 # System Console leeren zur besseren Übersicht
 clear
 
-echo "Version: 1.8"
+echo "Version: 1.9"
 echo ""
 
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
@@ -29,28 +29,27 @@ ask_for_reboot() {
 }
 
 ask_to_clear_cache() {
-	read -p "Möchten Sie den $1 Cache leeren? (ja/nein): " answer
+	read -p "Möchten Sie den Cache leeren? (ja/nein): " answer
 	case $answer in
 		[Jj][Aa]|[Jj]) 
-			return 0  # Zustimmung
 			# Initialen freien Speicherplatz erfassen
 			initial_free_space=$(get_free_space)
-			
+
 			# Page Cache, dentries und inodes leeren
 			echo "Leere Page Cache, dentries und inodes..."
 			sudo sync
 			echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
-			
+
 			# APT Cache leeren (nur auf Debian-basierten Systemen wie Ubuntu)
 			if command -v apt >/dev/null 2>&1; then
 				echo "Leere APT-Cache..."
 				sudo apt clean
 			fi
-			
+
 			# Systemd Journal Cache leeren
 			echo "Leere Systemd Journal..."
 			sudo journalctl --vacuum-time=1d
-			
+
 			# DNS Cache leeren (macOS Beispiel, bei Linux je nach Distribution unterschiedlich)
 			if [[ "$(uname)" == "Darwin" ]]; then
 				echo "Leere DNS-Cache auf macOS..."
@@ -58,20 +57,20 @@ ask_to_clear_cache() {
 			else
 				echo "DNS-Cache leeren auf Linux (falls notwendig, je nach Distribution unterschiedlich)"
 			fi
-			
+
 			echo "System-Caches wurden erfolgreich geleert."
-			
+
 			# Finalen freien Speicherplatz erfassen
 			final_free_space=$(get_free_space)
-			
+
 			# Berechnen, wie viel Speicherplatz freigegeben wurde
 			freed_space=$((final_free_space - initial_free_space))
-			
+
 			# Ausgabe des freigegebenen Speicherplatzes in MB
 			echo "Freigegebener Speicherplatz: $((freed_space / 1024)) MB"
 			;;
 		*) 
-			echo "$1 Cache wird nicht geleert."
+			echo "Cache wird nicht geleert."
 			return 1  # Ablehnung
 			;;
 	esac
@@ -128,7 +127,7 @@ ask_for_updates() {
 }
 
 # Beispiel für die Nutzung bei Page Cache
-ask_to_clear_cache "Page"
+ask_to_clear_cache
 
 # Nutzung der Funktion
 ask_for_updates
