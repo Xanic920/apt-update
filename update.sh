@@ -6,6 +6,33 @@ clear
 echo "Version: 1.0"
 echo ""
 
+echo "System-Caches werden geleert..."
+
+# Page Cache, dentries und inodes leeren
+echo "Leere Page Cache, dentries und inodes..."
+sudo sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
+
+# APT Cache leeren (nur auf Debian-basierten Systemen wie Ubuntu)
+if command -v apt >/dev/null 2>&1; then
+    echo "Leere APT-Cache..."
+    sudo apt clean
+fi
+
+# Systemd Journal Cache leeren
+echo "Leere Systemd Journal..."
+sudo journalctl --vacuum-time=1d
+
+# DNS Cache leeren (macOS Beispiel, bei Linux je nach Distribution unterschiedlich)
+if [[ "$(uname)" == "Darwin" ]]; then
+    echo "Leere DNS-Cache auf macOS..."
+    sudo killall -HUP mDNSResponder
+else
+    echo "DNS-Cache leeren auf Linux (falls notwendig, je nach Distribution unterschiedlich)"
+fi
+
+echo "System-Caches wurden erfolgreich geleert."
+
 # Aktualisiere die Paketliste und installiere die notwendigen Pakete.
 echo "Aktualisiere die Paketliste..."
 sudo apt update -qq && echo -e "\e[32mPaketliste erfolgreich aktualisiert.\e[0m" || echo -e "\e[31mFehler beim Aktualisieren der Paketliste!\e[0m"
