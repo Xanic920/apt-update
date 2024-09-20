@@ -8,7 +8,7 @@ current_year=$(date +"%Y")
 echo -e "\e[1;34m=====================================\e[0m"
 echo -e "\e[1;32m           System Wartung            \e[0m"
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\nVersion: 2.3\n"
+echo -e "\nVersion: 2.4\n"
 echo -e "\nProgrammer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
 
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
