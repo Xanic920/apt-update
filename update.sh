@@ -8,12 +8,12 @@ current_year=$(date +"%Y")
 echo -e "\e[1;34m=====================================\e[0m"
 echo -e "\e[1;32m           System Wartung            \e[0m"
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\nVersion: 3.1"
+echo -e "\nVersion: 3.2"
 echo -e "\nProgrammer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
 echo -e ""
 echo -e "Program is loading..."
 echo -e ""
-sleep 3
+sleep 2
 
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
 get_free_space() {
@@ -173,7 +173,7 @@ while true; do
         2) ask_to_clear_cache ;;
         1) ask_for_updates ;;
         8) ask_for_reboot ;;
-        9) echo -e "\n\e[1;32mBeenden...\e[0m" && exit 0 ;;
+        9) echo -e "\n\e[1;32mBye, bye! :-(...\e[0m" && exit 0 ;;
         *) ;;
     esac
 done
