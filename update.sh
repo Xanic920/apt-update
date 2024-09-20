@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# Update the package list and install necessary packages
-apt update && apt install apt-transport-https ca-certificates sudo curl -y
+# System Console leeren zur besseren Übersicht
+clear
+
+# Aktualisiere die Paketliste und installiere die notwendigen Pakete.
+echo "Aktualisiere die Paketliste..."
+sudo apt update -qq && echo -e "\e[32mPaketliste erfolgreich aktualisiert.\e[0m" || echo -e "\e[31mFehler beim Aktualisieren der Paketliste!\e[0m"
+
+echo "Installiere notwendige Pakete..."
+sudo apt install -y -qq apt-transport-https ca-certificates sudo curl \
+  && echo -e "\e[32mNotwendige Pakete erfolgreich installiert.\e[0m" \
+  || echo -e "\e[31mFehler beim Installieren der Pakete!\e[0m"
 
 # Systemerkennung
 if grep -qi 'proxmox' /etc/os-release; then
