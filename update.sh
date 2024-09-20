@@ -8,7 +8,7 @@ current_year=$(date +"%Y")
 echo -e "\e[1;34m=====================================\e[0m"
 echo -e "\e[1;32m           System Wartung            \e[0m"
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\nVersion: 3.0"
+echo -e "\nVersion: 3.1"
 echo -e "\nProgrammer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
 echo -e ""
 echo -e "Program is loading..."
@@ -150,11 +150,16 @@ ask_for_updates() {
 show_menu() {
     echo -e "\n\e[1;34m=====================================\e[0m"
     echo -e "\e[1;32m         Bitte wählen Sie eine Option:\e[0m"
-    echo -e "\e[1;34m=====================================\e[0m"
-    echo -e "\n\e[1;36m   1) Cache leeren\e[0m"
-    echo -e "\e[1;36m   2) Nach Updates suchen und installieren\e[0m"
-    echo -e "\e[1;36m   3) System neu starten\e[0m"
-    echo -e "\e[1;36m   4) Beenden\e[0m"
+    echo -e "\e[1;34m=====================================\e[0m\n"
+    echo -e "\e[1;36m   1) System Update\e[0m"
+    echo -e "\e[1;36m   2) Clear Cache\e[0m"
+    echo -e "\e[1;36m   3) Fix Locale Error\e[0m"
+    echo -e "\e[1;36m   4) Install Docker\e[0m"
+    echo -e "\e[1;36m   5) ._. hi!\e[0m"
+    echo -e "\e[1;36m   6) ._. hey!\e[0m"
+    echo -e "\e[1;36m   7) ._. hello!\e[0m"
+    echo -e "\e[1;36m   8) System Reboot\e[0m" 
+    echo -e "\e[1;36m   9) Quit\e[0m"
     echo -e "\n\e[1;34m=====================================\e[0m"
 }
 
@@ -165,14 +170,11 @@ while true; do
     read -p "Ihre Wahl: " choice
     echo "Eingegebene Wahl: '$choice'"
     case $choice in
-        1) ask_to_clear_cache ;;
-        2) ask_for_updates ;;
-        3) ask_for_reboot ;;
-        4) echo -e "\n\e[1;32mBeenden...\e[0m" && exit 0 ;;
-        *) 
-            echo -e "\n\e[1;31mUngültige Auswahl. Bitte versuchen Sie es erneut.\e[0m"
-            sleep 2  # Warte 2 Sekunden, bevor das Menü erneut angezeigt wird
-            ;;
+        2) ask_to_clear_cache ;;
+        1) ask_for_updates ;;
+        8) ask_for_reboot ;;
+        9) echo -e "\n\e[1;32mBeenden...\e[0m" && exit 0 ;;
+        *) ;;
     esac
 done
 
