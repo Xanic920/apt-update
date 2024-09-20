@@ -3,7 +3,7 @@
 # System Console leeren zur besseren Übersicht
 clear
 
-echo "Version: 1.6"
+echo "Version: 1.7"
 echo ""
 
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
