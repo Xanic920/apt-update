@@ -8,7 +8,7 @@ current_year=$(date +"%Y")
 echo -e "\e[1;34m=====================================\e[0m"
 echo -e "\e[1;32m           System Wartung            \e[0m"
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\nVersion: 2.8"
+echo -e "\nVersion: 2.9"
 echo -e "\nProgrammer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
 sleep 3
 
@@ -158,9 +158,9 @@ show_menu() {
 # Hauptprogramm
 while true; do
     show_menu
-    stty -echo
+    echo -e "\nBitte treffen Sie eine Auswahl:"
     read -p "Ihre Wahl: " choice
-    stty echo
+    echo "Eingegebene Wahl: '$choice'"
     case $choice in
         1) ask_to_clear_cache ;;
         2) ask_for_updates ;;
