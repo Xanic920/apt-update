@@ -107,6 +107,6 @@ while true; do
         2) ask_for_updates ;;
         3) ask_for_reboot ;;
         4) echo -e "\n\e[1;32mBeenden...\e[0m" && exit 0 ;;
-        *) echo -e "\n\e[1;31mUngültige Auswahl. Bitte versuchen Sie es erneut.\e[0m" ;;
+        *) clean && echo -e "\n\e[1;31mUngültige Auswahl. Bitte versuchen Sie es erneut.\e[0m" ;;
     esac
 done
