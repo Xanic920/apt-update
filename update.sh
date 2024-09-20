@@ -8,7 +8,7 @@ current_year=$(date +"%Y")
 echo -e "\e[1;34m=====================================\e[0m"
 echo -e "\e[1;32m           System Wartung            \e[0m"
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\nVersion: 2.5\n"
+echo -e "\nVersion: 2.6\n"
 echo -e "\nProgrammer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
 sleep 3
 
@@ -164,6 +164,10 @@ while true; do
         2) ask_for_updates ;;
         3) ask_for_reboot ;;
         4) echo -e "\n\e[1;32mBeenden...\e[0m" && exit 0 ;;
-        *) echo -e "\n\e[1;31mUngültige Auswahl. Bitte versuchen Sie es erneut.\e[0m" ;;
+        *) 
+            echo -e "\n\e[1;31mUngültige Auswahl. Bitte versuchen Sie es erneut.\e[0m"
+            sleep 2  # Warte 2 Sekunden, bevor das Menü erneut angezeigt wird
+            ;;
     esac
 done
+
