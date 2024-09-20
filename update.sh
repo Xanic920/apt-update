@@ -159,7 +159,7 @@ show_menu() {
     echo -e "\e[1;36m   6) ._. hey!\e[0m"
     echo -e "\e[1;36m   7) ._. hello!\e[0m"
     echo -e "\e[1;36m   8) System Reboot\e[0m" 
-    echo -e "\e[1;36m   9) Quit\e[0m"
+    echo -e "\e[1;31m   9) Quit\e[0m"
     echo -e "\n\e[1;34m=====================================\e[0m"
 }
 
