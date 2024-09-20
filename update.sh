@@ -3,7 +3,7 @@
 # System Console leeren zur besseren Übersicht
 clear
 
-echo "Version: 1.0"
+echo "Version: 1.1"
 echo ""
 
 echo "System-Caches werden geleert..."
