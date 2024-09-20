@@ -3,7 +3,7 @@
 # System Console leeren zur besseren Übersicht
 clear
 
-echo "Version: 1.2"
+echo "Version: 1.3"
 echo ""
 
 echo "System-Caches werden geleert..."
@@ -11,6 +11,23 @@ echo "System-Caches werden geleert..."
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
 get_free_space() {
     df --output=avail / | tail -n 1
+}
+
+# Funktion, um nach einem Neustart zu fragen
+ask_for_reboot() {
+    read -p "Möchten Sie das System jetzt neu starten? (ja/nein): " answer
+    case $answer in
+        [Jj][Aa]|[Jj]) 
+            echo "System wird neu gestartet..."
+            sudo reboot
+            ;;
+        [Nn][Ee][Ii][Nn]|[Nn]) 
+            echo "System wird nicht neu gestartet."
+            ;;
+        *) 
+            echo "Ungültige Eingabe. System wird nicht neu gestartet."
+            ;;
+    esac
 }
 
 # Initialen freien Speicherplatz erfassen
@@ -91,3 +108,7 @@ fi
 
 # Update, upgrade, and remove unnecessary packages
 apt update && apt dist-upgrade -y && apt autoremove -y
+
+
+# Frage nach Neustart
+ask_for_reboot
