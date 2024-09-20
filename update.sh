@@ -3,10 +3,13 @@
 # System Console leeren zur besseren Übersicht
 clear
 
+current_year=$(date +"%Y")
+
 echo -e "\e[1;34m=====================================\e[0m"
 echo -e "\e[1;32m           System Wartung            \e[0m"
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\nVersion: 2.1\n"
+echo -e "\nVersion: 2.2\n"
+echo -e "\nProgrammer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
 
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
 get_free_space() {
