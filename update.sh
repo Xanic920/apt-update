@@ -3,7 +3,7 @@
 # System Console leeren zur besseren Übersicht
 clear
 
-echo "Version: 1.9"
+echo "Version: 2.0"
 echo ""
 
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
@@ -84,7 +84,24 @@ ask_for_updates() {
     esac
 }
 
-# Skriptablauf
-ask_to_clear_cache
-ask_for_updates
-ask_for_reboot
+# Menü zur Auswahl der Aktion
+show_menu() {
+    echo "Bitte wählen Sie eine Option:"
+    echo "1) Cache leeren"
+    echo "2) Nach Updates suchen und installieren"
+    echo "3) System neu starten"
+    echo "4) Beenden"
+}
+
+# Hauptprogramm
+while true; do
+    show_menu
+    read -p "Ihre Wahl: " choice
+    case $choice in
+        1) ask_to_clear_cache ;;
+        2) ask_for_updates ;;
+        3) ask_for_reboot ;;
+        4) echo "Beenden..." && exit 0 ;;
+        *) echo "Ungültige Auswahl. Bitte versuchen Sie es erneut." ;;
+    esac
+done
