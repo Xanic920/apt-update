@@ -86,6 +86,7 @@ ask_for_updates() {
 
 # Menü zur Auswahl der Aktion
 show_menu() {
+    clear
     echo "Bitte wählen Sie eine Option:"
     echo "1) Cache leeren"
     echo "2) Nach Updates suchen und installieren"
