@@ -3,10 +3,8 @@
 # System Console leeren zur besseren Übersicht
 clear
 
-echo "Version: 1.5"
+echo "Version: 1.6"
 echo ""
-
-echo "System-Caches werden geleert..."
 
 # Funktion, um den freien Speicherplatz in Kilobytes auszulesen
 get_free_space() {
@@ -131,11 +129,7 @@ ask_for_updates() {
 }
 
 # Beispiel für die Nutzung bei Page Cache
-if ask_to_clear_cache "Page"; then
-    echo "Leere Page Cache, dentries und inodes..."
-    sudo sync
-    echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
-fi
+ask_to_clear_cache
 
 # Nutzung der Funktion
 ask_for_updates
