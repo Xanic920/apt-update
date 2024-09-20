@@ -3,10 +3,18 @@
 # System Console leeren zur besseren Übersicht
 clear
 
-echo "Version: 1.1"
+echo "Version: 1.2"
 echo ""
 
 echo "System-Caches werden geleert..."
+
+# Funktion, um den freien Speicherplatz in Kilobytes auszulesen
+get_free_space() {
+    df --output=avail / | tail -n 1
+}
+
+# Initialen freien Speicherplatz erfassen
+initial_free_space=$(get_free_space)
 
 # Page Cache, dentries und inodes leeren
 echo "Leere Page Cache, dentries und inodes..."
@@ -32,6 +40,18 @@ else
 fi
 
 echo "System-Caches wurden erfolgreich geleert."
+
+# Finalen freien Speicherplatz erfassen
+final_free_space=$(get_free_space)
+
+# Berechnen, wie viel Speicherplatz freigegeben wurde
+freed_space=$((final_free_space - initial_free_space))
+
+# Ausgabe des freigegebenen Speicherplatzes in MB
+echo "System-Caches wurden erfolgreich geleert."
+echo "Freigegebener Speicherplatz: $((freed_space / 1024)) MB"
+
+
 
 # Aktualisiere die Paketliste und installiere die notwendigen Pakete.
 echo "Aktualisiere die Paketliste..."
