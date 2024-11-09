@@ -3,178 +3,76 @@
 # System Console leeren zur besseren Übersicht
 clear
 
+# Titel anzeigen
 current_year=$(date +"%Y")
-
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\e[1;32m           System Wartung            \e[0m"
+echo -e "\e[1;32m       System Wartung (v4.0)         \e[0m"
 echo -e "\e[1;34m=====================================\e[0m"
-echo -e "\nVersion: 3.3"
-echo -e "\nProgrammer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
-echo -e ""
-echo -e "Program is loading..."
-echo -e ""
-sleep 2
+echo -e "Programmer: Xanic\n© $current_year Xanic. Alle Rechte vorbehalten."
+echo -e "Program is loading...\n"
+sleep 1
 
-# Funktion, um den freien Speicherplatz in Kilobytes auszulesen
+# Funktion, um den freien Speicherplatz anzuzeigen
 get_free_space() {
     df --output=avail / | tail -n 1
 }
 
-# Funktion, um nach einem Neustart zu fragen
-ask_for_reboot() {
-    read -p "Möchten Sie das System jetzt neu starten? (ja/nein): " answer
-    case $answer in
-        [Jj][Aa]|[Jj]) 
-            echo -e "\n\e[1;33mSystem wird neu gestartet...\e[0m"
-            sudo reboot
-            ;;
-        [Nn][Ee][Ii][Nn]|[Nn]) 
-            echo -e "\n\e[1;33mSystem wird nicht neu gestartet.\e[0m"
-            ;;
-        *) 
-            echo -e "\n\e[1;31mUngültige Eingabe. System wird nicht neu gestartet.\e[0m"
-            ;;
-    esac
+# Cache leeren
+clear_cache() {
+    echo -e "\n\e[1;33mLeere Cache...\e[0m"
+    sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
+    sudo apt clean && sudo journalctl --vacuum-time=1d
+    echo -e "\e[1;32mCache erfolgreich geleert.\e[0m"
 }
 
-# Funktion, um den Cache zu leeren
-ask_to_clear_cache() {
-    read -p "Möchten Sie den Cache leeren? (ja/nein): " answer
-    case $answer in
-        [Jj][Aa]|[Jj]) 
-            initial_free_space=$(get_free_space)
-
-            echo -e "\n\e[1;33mLeere Cache...\e[0m"
-            sudo sync
-            echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
-            [[ "$(command -v apt)" ]] && sudo apt clean
-            sudo journalctl --vacuum-time=1d
-            [[ "$(uname)" == "Darwin" ]] && sudo killall -HUP mDNSResponder
-
-            echo -e "\n\e[1;32mSystem-Caches wurden erfolgreich geleert.\e[0m"
-
-            final_free_space=$(get_free_space)
-            freed_space=$((final_free_space - initial_free_space))
-            echo -e "Freigegebener Speicherplatz: \e[1;32m$((freed_space / 1024)) MB\e[0m"
-            ;;
-        *) 
-            echo -e "\n\e[1;31mCache wird nicht geleert.\e[0m"
-            return 1
-            ;;
-    esac
+# System aktualisieren und notwendige Pakete installieren
+update_system() {
+    echo -e "\n\e[1;33mAktualisiere Paketliste und installiere notwendige Pakete...\e[0m"
+    sudo apt update -qq && sudo apt install -y -qq apt-transport-https ca-certificates curl
+    sudo apt dist-upgrade -y && sudo apt autoremove -y
+    echo -e "\e[1;32mSystem erfolgreich aktualisiert.\e[0m"
 }
 
-# Funktion, um die Paketliste zu aktualisieren und den Speicherplatz zu berechnen
-update_package_list() {
-    initial_free_space=$(get_free_space)
-
-    echo -e "\n\e[1;33mAktualisiere die Paketliste...\e[0m"
-    if sudo apt update -qq; then
-        echo -e "\e[32mPaketliste erfolgreich aktualisiert.\e[0m"
-    else
-        echo -e "\e[31mFehler beim Aktualisieren der Paketliste!\e[0m"
-        return 1
-    fi
-
-    final_free_space=$(get_free_space)
-    freed_space=$((final_free_space - initial_free_space))
-    echo -e "Speicherplatzverbrauch bei der Aktualisierung: \e[1;32m$((freed_space / 1024)) MB\e[0m"
-}
-
-# Funktion, um notwendige Pakete zu installieren und den Speicherplatz zu berechnen
-install_essential_packages() {
-    initial_free_space=$(get_free_space)
-
-    echo -e "\n\e[1;33mInstalliere notwendige Pakete...\e[0m"
-    if sudo apt install -y -qq apt-transport-https ca-certificates sudo curl; then
-        echo -e "\e[32mNotwendige Pakete erfolgreich installiert.\e[0m"
-    else
-        echo -e "\e[31mFehler beim Installieren der Pakete!\e[0m"
-        return 1
-    fi
-
-    final_free_space=$(get_free_space)
-    freed_space=$((final_free_space - initial_free_space))
-    echo -e "Speicherplatzverbrauch bei der Installation: \e[1;32m$((freed_space / 1024)) MB\e[0m"
-}
-
-# Funktion, um Proxmox- oder Debian-Systeme zu erkennen und Quellen zu ändern
+# Repositories anpassen
 adjust_repositories() {
     echo -e "\n\e[1;33mAnpassung der Repositories...\e[0m"
     if grep -qi 'proxmox' /etc/os-release; then
-        echo "Proxmox-System erkannt."
-        sudo find /etc/apt -type f -name "*.list" -exec sed -i 's|http://|https://|g' {} +
+        echo "Proxmox erkannt."
     elif grep -qi 'debian' /etc/os-release; then
-        echo "Debian-System erkannt."
-        sudo find /etc/apt -type f -name "*.list" -exec sed -i 's|http://|https://|g' {} +
+        echo "Debian erkannt."
     else
-        echo "Kein Proxmox- oder Debian-System erkannt. Keine Änderungen vorgenommen."
+        echo "Kein bekanntes System erkannt."
     fi
+    sudo find /etc/apt -type f -name "*.list" -exec sed -i 's|http://|https://|g' {} +
+    echo -e "\e[1;32mRepositories angepasst.\e[0m"
 }
 
-# Funktion, um das System zu aktualisieren und zu bereinigen
-upgrade_system() {
-    initial_free_space=$(get_free_space)
-
-    echo -e "\n\e[1;33mFühre Systemaktualisierung durch...\e[0m"
-    if sudo apt dist-upgrade -y && sudo apt autoremove -y; then
-        echo -e "\e[32mSystem erfolgreich aktualisiert und bereinigt.\e[0m"
-    else
-        echo -e "\e[31mFehler bei der Systemaktualisierung!\e[0m"
-        return 1
-    fi
-
-    final_free_space=$(get_free_space)
-    freed_space=$((final_free_space - initial_free_space))
-    echo -e "Speicherplatzverbrauch bei der Aktualisierung: \e[1;32m$((freed_space / 1024)) MB\e[0m"
+# Neustart durchführen
+reboot_system() {
+    echo -e "\n\e[1;33mSystem wird neu gestartet...\e[0m"
+    sudo reboot
 }
 
-# Funktion, um nach Updates zu fragen und den Ablauf zu steuern
-ask_for_updates() {
-    read -p "Möchten Sie nach Updates suchen und diese installieren? (ja/nein): " answer
-    case $answer in
-        [Jj][Aa]|[Jj])
-            echo -e "\n\e[1;33mSuche nach Updates und installiere diese...\e[0m"
-            update_package_list && \
-            install_essential_packages && \
-            adjust_repositories && \
-            upgrade_system
-            ;;
-        *)
-            echo -e "\n\e[1;31mUpdates werden nicht durchgeführt.\e[0m"
-            ;;
-    esac
-}
-
-# Menü zur Auswahl der Aktion
+# Hauptmenü anzeigen
 show_menu() {
-    echo -e "\n\e[1;34m=====================================\e[0m"
-    echo -e "\e[1;32m         Bitte wählen Sie eine Option:\e[0m"
-    echo -e "\e[1;34m=====================================\e[0m\n"
-    echo -e "\e[1;36m   1) System Update\e[0m"
-    echo -e "\e[1;36m   2) Clear Cache\e[0m"
-    echo -e "\e[1;36m   3) Fix Locale Error\e[0m"
-    echo -e "\e[1;36m   4) Install Docker\e[0m"
-    echo -e "\e[1;36m   5) ._. hi!\e[0m"
-    echo -e "\e[1;36m   6) ._. hey!\e[0m"
-    echo -e "\e[1;36m   7) ._. hello!\e[0m"
-    echo -e "\e[1;36m   8) System Reboot\e[0m" 
-    echo -e "\e[1;31m   9) Quit\e[0m"
-    echo -e "\n\e[1;34m=====================================\e[0m"
+    echo -e "\n\e[1;34m=================== Menü ===================\e[0m"
+    echo -e "\e[1;36m 1) System Update\e[0m"
+    echo -e "\e[1;36m 2) Cache leeren\e[0m"
+    echo -e "\e[1;36m 3) Repositories anpassen\e[0m"
+    echo -e "\e[1;36m 4) Neustart\e[0m"
+    echo -e "\e[1;31m 5) Beenden\e[0m"
 }
 
 # Hauptprogramm
 while true; do
     show_menu
-    echo -e "\nBitte treffen Sie eine Auswahl:"
-    read -p "Ihre Wahl: " choice
-    echo "Eingegebene Wahl: '$choice'"
+    read -p "Wählen Sie eine Option: " choice
     case $choice in
-        2) ask_to_clear_cache ;;
-        1) ask_for_updates ;;
-        8) ask_for_reboot ;;
-        9) echo -e "\n\e[1;32mBye, bye! :-(...\e[0m" && exit 0 ;;
-        *) ;;
+        1) update_system ;;
+        2) clear_cache ;;
+        3) adjust_repositories ;;
+        4) reboot_system ;;
+        5) echo -e "\n\e[1;32mBye, bye! :-(\e[0m" && exit 0 ;;
+        *) echo -e "\e[1;31mUngültige Eingabe!\e[0m" ;;
     esac
 done
-
