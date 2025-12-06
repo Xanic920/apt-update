@@ -1,13 +1,21 @@
 #!/bin/bash
-# Debian 13 Wartungs-Skript:
+# Wartungs-Skript für Debian >= 12
+# - Bricht ab, wenn Debian-Version < 12
 # - Apt-Repos von http -> https (ohne Proxmox)
 # - System-Update & Upgrade
 # - APT-Cache bereinigen
 # - Optionale Log-/Temp-Bereinigung
 # - Timezone auf Europe/Berlin setzen
 # - Postfix neu laden, falls vorhanden
+# - apt-transport-https auf Debian 12+ als Altlast entfernt
+# - Ausgabe in Logdatei, max. 3 Logs werden aufbewahrt
 
 set -euo pipefail
+
+SCRIPT_VERSION="1.1.0"
+
+LOG_DIR="/var/log/xanic-update"
+LOG_FILE=""
 
 log() {
   echo -e "\033[1;32m[*]\033[0m $*"
@@ -24,27 +32,83 @@ require_root() {
   fi
 }
 
+setup_logging() {
+  mkdir -p "$LOG_DIR"
+
+  local ts
+  ts="$(date +"%Y%m%d-%H%M%S")"
+  LOG_FILE="$LOG_DIR/update-$ts.log"
+
+  # Logrotation: max. 3 Logdateien behalten (die 3 neuesten)
+  ls -1t "$LOG_DIR"/update-*.log 2>/dev/null | awk 'NR>3' | xargs -r rm -f || true
+
+  # Alles (stdout + stderr) in Log + Konsole schreiben
+  exec > >(tee -a "$LOG_FILE") 2>&1
+
+  log "Starte Skript-Log: $LOG_FILE"
+  log "Skript-Version: $SCRIPT_VERSION"
+}
+
+get_debian_version() {
+  # Gibt die Debian VERSION_ID zurück (z.B. 12, 13) oder leer, falls nicht Debian
+  if [ -r /etc/os-release ]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    if [ "${ID:-}" = "debian" ] && [ -n "${VERSION_ID:-}" ]; then
+      echo "$VERSION_ID"
+      return 0
+    fi
+  fi
+  echo ""
+  return 1
+}
+
+require_min_debian_12() {
+  local deb_ver
+  deb_ver="$(get_debian_version || echo "")"
+
+  if [ -z "$deb_ver" ]; then
+    err "Dieses Skript ist nur für Debian 12 oder höher vorgesehen. System konnte nicht eindeutig als Debian erkannt werden."
+    exit 1
+  fi
+
+  local deb_major="${deb_ver%%.*}"
+
+  if [ "$deb_major" -lt 12 ]; then
+    err "Debian-Version $deb_ver erkannt. Dieses Skript setzt mindestens Debian 12 voraus. Abbruch."
+    exit 1
+  fi
+
+  log "Debian $deb_ver erkannt – Mindestanforderung (>= 12) erfüllt."
+}
+
+handle_apt_transport_https() {
+  # Für Debian 12+ ist apt-transport-https überflüssig und soll entfernt werden, falls vorhanden.
+  if dpkg -l apt-transport-https 2>/dev/null | grep -q '^ii'; then
+    log "Veraltetes Paket 'apt-transport-https' gefunden – entferne es (HTTPS-Unterstützung ist in apt integriert)..."
+    apt-get purge -y apt-transport-https || true
+  else
+    log "'apt-transport-https' ist nicht installiert – nichts zu tun."
+  fi
+}
+
 install_prereqs() {
   log "Führe apt update aus..."
   apt-get update
 
-  log "Installiere benötigte Pakete (ca-certificates, tzdata, optional apt-transport-https)..."
+  log "Installiere benötigte Pakete (ca-certificates, tzdata)..."
   local pkgs="ca-certificates tzdata"
-  if apt-cache show apt-transport-https >/dev/null 2>&1; then
-    pkgs="$pkgs apt-transport-https"
-  else
-    log "Hinweis: Paket 'apt-transport-https' ist nicht verfügbar oder überflüssig, wird übersprungen."
-  fi
 
   DEBIAN_FRONTEND=noninteractive apt-get install -y $pkgs
+
+  # Behandlung von apt-transport-https für Debian >= 12
+  handle_apt_transport_https
 }
 
 switch_apt_to_https() {
   log "Stelle APT-Repositories von http auf https um (ohne Proxmox)..."
 
-  # Alle .list-Dateien unter /etc/apt durchsuchen
   find /etc/apt -type f -name '*.list' -print0 | while IFS= read -r -d '' file; do
-    # In allen Zeilen, die NICHT Proxmox sind, http:// -> https://
     sed -i -E \
       '/^[[:space:]]*deb(-src)?[[:space:]].*http:\/\/download\.proxmox\.com/!s|http://|https://|g' \
       "$file"
@@ -61,30 +125,33 @@ do_system_upgrade() {
 
 apt_cache_cleanup() {
   log "Bereinige APT-Cache und unbenutzte Pakete..."
-  # Entfernt überflüssige Pakete und alten Paket-Cache, ist laut Doku sicher. 
   apt-get autoremove -y || true
   apt-get autoclean -y || true
   apt-get clean || true
 }
 
 disk_overview() {
-  log "Speicherplatz-Übersicht (ähnlich ncdu, aber nicht interaktiv):"
-  echo "Top-Verzeichnisse unter /:"
-  du -xh -d1 / 2>/dev/null | sort -h | tail -n 20
-  echo
+  log "Speicherplatz-Übersicht (nur Verzeichnisse >= 1G):"
 
-  if [ -d /var ]; then
-    echo
-    echo "Top-Verzeichnisse unter /var:"
-    du -xh -d1 /var 2>/dev/null | sort -h | tail -n 20
-    echo
-  fi
+  show_top() {
+    local path="$1"
+    if [ -d "$path" ]; then
+      echo "Top-Verzeichnisse unter $path (>= 1G):"
+      # Nur Verzeichnisse >= 1G anzeigen
+      local out
+      out="$(du -xh -d1 --threshold=1G "$path" 2>/dev/null | sort -h || true)"
+      if [ -n "$out" ]; then
+        echo "$out"
+      else
+        echo "  (keine Verzeichnisse >= 1G)"
+      fi
+      echo
+    fi
+  }
 
-  if [ -d /home ]; then
-    echo "Top-Verzeichnisse unter /home:"
-    du -xh -d1 /home 2>/dev/null | sort -h | tail -n 20
-    echo
-  fi
+  show_top "/"
+  show_top "/var"
+  show_top "/home"
 }
 
 heavy_cleanup() {
@@ -95,7 +162,6 @@ heavy_cleanup() {
 
   log "Bereinige klassische Logfiles in /var/log..."
   if [ -d /var/log ]; then
-    # Aktuelle Logs leeren, rotierte/komprimierte entfernen
     for f in syslog messages kern.log daemon.log auth.log; do
       if [ -f "/var/log/$f" ]; then
         : > "/var/log/$f"
@@ -121,8 +187,6 @@ set_timezone_berlin() {
   if [ -f "/usr/share/zoneinfo/$tz" ]; then
     echo "$tz" > /etc/timezone
     ln -sf "/usr/share/zoneinfo/$tz" /etc/localtime
-
-    # Nicht-interaktive Re-Konfiguration von tzdata
     DEBIAN_FRONTEND=noninteractive dpkg-reconfigure tzdata >/dev/null 2>&1 || true
   else
     err "Zeitzonendatei /usr/share/zoneinfo/$tz wurde nicht gefunden."
@@ -140,14 +204,15 @@ reload_postfix_if_present() {
 
 main() {
   require_root
+  setup_logging
+  require_min_debian_12
 
-  log "Starte Systempflege für Debian..."
+  log "Starte Systempflege..."
   install_prereqs
   switch_apt_to_https
   do_system_upgrade
   apt_cache_cleanup
 
-  # Übersicht vor optionaler Tiefenreinigung
   disk_overview
 
   echo
@@ -161,7 +226,6 @@ main() {
       ;;
   esac
 
-  # Übersicht nach Bereinigung
   disk_overview
 
   set_timezone_berlin
