@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.1"
+SCRIPT_VERSION="1.2.2"
 
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
@@ -86,7 +86,7 @@ install_prereqs() {
   apt-get update
 
   log "Installiere benötigte Pakete (ca-certificates, tzdata, curl)..."
-  local pkgs="ca-certificates tzdata curl"
+  local pkgs="ca-certificates tzdata curl apt-transport-https"
 
   DEBIAN_FRONTEND=noninteractive apt-get install -y $pkgs
 }
