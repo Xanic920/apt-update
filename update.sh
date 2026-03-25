@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.0"
+SCRIPT_VERSION="1.2.1"
 
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
@@ -81,15 +81,6 @@ require_min_debian_12() {
   log "Debian $deb_ver erkannt – Mindestanforderung (>= 12) erfüllt."
 }
 
-handle_apt_transport_https() {
-  if dpkg -l apt-transport-https 2>/dev/null | grep -q '^ii'; then
-    log "Veraltetes Paket 'apt-transport-https' gefunden – entferne es..."
-    apt-get purge -y apt-transport-https || true
-  else
-    log "'apt-transport-https' ist nicht installiert – nichts zu tun."
-  fi
-}
-
 install_prereqs() {
   log "Führe apt update aus..."
   apt-get update
@@ -98,8 +89,6 @@ install_prereqs() {
   local pkgs="ca-certificates tzdata curl"
 
   DEBIAN_FRONTEND=noninteractive apt-get install -y $pkgs
-
-  handle_apt_transport_https
 }
 
 install_update_launcher() {
