@@ -9,12 +9,13 @@
 # - Postfix neu laden, falls vorhanden
 # - apt-transport-https auf Debian 12+ als Altlast entfernt
 # - Ausgabe in Logdatei, max. 3 Logs werden aufbewahrt
+# - Installiert globalen Befehl "xupdate" für künftige Updates
 
 set -euo pipefail
 
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.2.0"
 
-LOG_DIR="/var/log/xanic-update"
+LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
 log() {
@@ -39,10 +40,9 @@ setup_logging() {
   ts="$(date +"%Y%m%d-%H%M%S")"
   LOG_FILE="$LOG_DIR/update-$ts.log"
 
-  # Logrotation: max. 3 Logdateien behalten (die 3 neuesten)
+  # Logrotation: max. 3 Logdateien behalten
   ls -1t "$LOG_DIR"/update-*.log 2>/dev/null | awk 'NR>3' | xargs -r rm -f || true
 
-  # Alles (stdout + stderr) in Log + Konsole schreiben
   exec > >(tee -a "$LOG_FILE") 2>&1
 
   log "Starte Skript-Log: $LOG_FILE"
@@ -50,7 +50,6 @@ setup_logging() {
 }
 
 get_debian_version() {
-  # Gibt die Debian VERSION_ID zurück (z.B. 12, 13) oder leer, falls nicht Debian
   if [ -r /etc/os-release ]; then
     # shellcheck disable=SC1091
     . /etc/os-release
@@ -83,9 +82,8 @@ require_min_debian_12() {
 }
 
 handle_apt_transport_https() {
-  # Für Debian 12+ ist apt-transport-https überflüssig und soll entfernt werden, falls vorhanden.
   if dpkg -l apt-transport-https 2>/dev/null | grep -q '^ii'; then
-    log "Veraltetes Paket 'apt-transport-https' gefunden – entferne es (HTTPS-Unterstützung ist in apt integriert)..."
+    log "Veraltetes Paket 'apt-transport-https' gefunden – entferne es..."
     apt-get purge -y apt-transport-https || true
   else
     log "'apt-transport-https' ist nicht installiert – nichts zu tun."
@@ -96,13 +94,35 @@ install_prereqs() {
   log "Führe apt update aus..."
   apt-get update
 
-  log "Installiere benötigte Pakete (ca-certificates, tzdata)..."
-  local pkgs="ca-certificates tzdata"
+  log "Installiere benötigte Pakete (ca-certificates, tzdata, curl)..."
+  local pkgs="ca-certificates tzdata curl"
 
   DEBIAN_FRONTEND=noninteractive apt-get install -y $pkgs
 
-  # Behandlung von apt-transport-https für Debian >= 12
   handle_apt_transport_https
+}
+
+install_update_launcher() {
+  log "Installiere globalen Update-Befehl 'xupdate'..."
+
+  cat > /usr/local/bin/xupdate <<'EOF'
+#!/bin/bash
+set -euo pipefail
+curl -fsSL https://update.xanic.eu/ | bash
+EOF
+  chmod +x /usr/local/bin/xupdate
+
+  # Optional: zusätzlicher Shortcut im Root-Verzeichnis
+  cat > /root/update <<'EOF'
+#!/bin/bash
+set -euo pipefail
+curl -fsSL https://update.xanic.eu/ | bash
+EOF
+  chmod +x /root/update
+
+  log "Launcher erstellt:"
+  log " - /usr/local/bin/xupdate"
+  log " - /root/update"
 }
 
 switch_apt_to_https() {
@@ -137,7 +157,6 @@ disk_overview() {
     local path="$1"
     if [ -d "$path" ]; then
       echo "Top-Verzeichnisse unter $path (>= 1G):"
-      # Nur Verzeichnisse >= 1G anzeigen
       local out
       out="$(du -xh -d1 --threshold=1G "$path" 2>/dev/null | sort -h || true)"
       if [ -n "$out" ]; then
@@ -209,6 +228,7 @@ main() {
 
   log "Starte Systempflege..."
   install_prereqs
+  install_update_launcher
   switch_apt_to_https
   do_system_upgrade
   apt_cache_cleanup
@@ -232,6 +252,7 @@ main() {
   reload_postfix_if_present
 
   log "Fertig. System wurde aktualisiert und bereinigt."
+  log "Künftige Updates können mit 'xupdate' ausgeführt werden."
 }
 
 main "$@"
