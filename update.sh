@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.2"
+SCRIPT_VERSION="1.2.3"
 
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
@@ -101,17 +101,8 @@ curl -fsSL https://update.xanic.eu/ | bash
 EOF
   chmod +x /usr/local/bin/xupdate
 
-  # Optional: zusätzlicher Shortcut im Root-Verzeichnis
-  cat > /root/update <<'EOF'
-#!/bin/bash
-set -euo pipefail
-curl -fsSL https://update.xanic.eu/ | bash
-EOF
-  chmod +x /root/update
-
   log "Launcher erstellt:"
   log " - /usr/local/bin/xupdate"
-  log " - /root/update"
 }
 
 switch_apt_to_https() {
