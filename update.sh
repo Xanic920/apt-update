@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.1.0"
+SCRIPT_VERSION="2.1.2"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -225,7 +225,12 @@ main() {
   install_launcher
 
   echo
-  read -r -p "Healthcheck durchführen? [y/N] " answer
+  if [ -r /dev/tty ]; then
+    read -r -p "Healthcheck durchführen? [y/N] " answer < /dev/tty
+  else
+    answer="n"
+  fi
+
   case "$answer" in
     [yY]|[yY][eE][sS])
       healthcheck
