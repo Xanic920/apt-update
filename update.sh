@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.4.0"
+SCRIPT_VERSION="2.4.1"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -307,10 +307,14 @@ main() {
 
   install_prereqs
   switch_apt_to_https
+  
   do_upgrade_if_needed
   check_pihole_update
+  check_jellyfin
+  
   apt_cleanup
   cleanup_if_needed
+  
   set_timezone
   reload_postfix
   install_launcher
