@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.2.0"
+SCRIPT_VERSION="2.3.0"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -141,6 +141,27 @@ cleanup_if_needed() {
   fi
 }
 
+# -------- Pi-Hole --------
+check_pihole_update() {
+  if command -v pihole >/dev/null 2>&1; then
+    log "Pi-hole erkannt – prüfe auf Updates..."
+
+    local output
+    output="$(pihole -up --check-only 2>&1 || true)"
+
+    if echo "$output" | grep -qi "up to date"; then
+      log "Pi-hole ist aktuell – überspringe"
+    else
+      log "Pi-hole Update verfügbar → führe Update aus"
+      pihole -up
+    fi
+  else
+    log "Pi-hole nicht installiert – überspringe"
+  fi
+}
+
+
+
 # -------- LAUNCHER --------
 install_launcher() {
   if [ ! -f /usr/local/bin/xupdate ]; then
@@ -239,6 +260,7 @@ main() {
   install_prereqs
   switch_apt_to_https
   do_upgrade_if_needed
+  check_pihole_update
   apt_cleanup
   cleanup_if_needed
   set_timezone
