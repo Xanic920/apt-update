@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.3.0"
+SCRIPT_VERSION="2.3.1"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -155,6 +155,16 @@ check_pihole_update() {
       log "Pi-hole Update verfügbar → führe Update aus"
       pihole -up
     fi
+
+    # 👉 NEU: Gravity Update Abfrage
+    echo
+    if prompt_yes_no "Pi-hole Gravity Update durchführen? [y/N] "; then
+      log "Starte Gravity Update..."
+      pihole -g
+    else
+      log "Gravity Update übersprungen"
+    fi
+
   else
     log "Pi-hole nicht installiert – überspringe"
   fi
