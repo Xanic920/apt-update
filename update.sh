@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.4.2"
+SCRIPT_VERSION="2.4.3"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -189,7 +189,7 @@ check_pihole_update() {
 
 # -------- Jellyfin --------
 check_jellyfin() {
-  if systemctl list-unit-files | grep -q jellyfin; then
+  if systemctl list-unit-files --type=service | grep -q '^jellyfin\.service'; then
     log "Jellyfin erkannt – prüfe Zustand..."
 
     # -------- AUTOSTART CHECK --------
