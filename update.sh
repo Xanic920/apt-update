@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.1.2"
+SCRIPT_VERSION="2.2.0"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -147,8 +147,13 @@ install_launcher() {
     log "Installiere xupdate"
     cat > /usr/local/bin/xupdate <<'EOF'
 #!/bin/bash
-set -e
-curl -fsSL https://update.xanic.eu/ | bash
+set -euo pipefail
+
+tmp_file="$(mktemp)"
+trap 'rm -f "$tmp_file"' EXIT
+
+curl -fsSL https://update.xanic.eu/ -o "$tmp_file"
+bash "$tmp_file"
 EOF
     chmod +x /usr/local/bin/xupdate
   else
@@ -203,6 +208,22 @@ check_reboot_required() {
   fi
 }
 
+# -------- Yes/No Abfrage --------
+prompt_yes_no() {
+  local prompt="$1"
+  local answer=""
+
+  if [ -r /dev/tty ]; then
+    read -r -p "$prompt" answer < /dev/tty
+  else
+    answer="n"
+  fi
+
+  case "$answer" in
+    [yY]|[yY][eE][sS]) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 
 # -------- MAIN --------
@@ -225,20 +246,11 @@ main() {
   install_launcher
 
   echo
-  if [ -r /dev/tty ]; then
-    read -r -p "Healthcheck durchführen? [y/N] " answer < /dev/tty
+  if prompt_yes_no "Healthcheck durchführen? [y/N] "; then
+    healthcheck
   else
-    answer="n"
+    log "Healthcheck übersprungen"
   fi
-
-  case "$answer" in
-    [yY]|[yY][eE][sS])
-      healthcheck
-      ;;
-    *)
-      log "Healthcheck übersprungen"
-      ;;
-  esac
 
   check_reboot_required
 
