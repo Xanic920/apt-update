@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.3.1"
+SCRIPT_VERSION="2.3.2"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -42,6 +42,23 @@ install_prereqs() {
       log "$pkg bereits installiert"
     fi
   done
+}
+
+# -------- Yes/No Abfrage --------
+prompt_yes_no() {
+  local prompt="$1"
+  local answer=""
+
+  if [ -r /dev/tty ]; then
+    read -r -p "$prompt" answer < /dev/tty
+  else
+    answer="n"
+  fi
+
+  case "$answer" in
+    [yY]|[yY][eE][sS]) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 # -------- APT HTTPS --------
@@ -239,22 +256,6 @@ check_reboot_required() {
   fi
 }
 
-# -------- Yes/No Abfrage --------
-prompt_yes_no() {
-  local prompt="$1"
-  local answer=""
-
-  if [ -r /dev/tty ]; then
-    read -r -p "$prompt" answer < /dev/tty
-  else
-    answer="n"
-  fi
-
-  case "$answer" in
-    [yY]|[yY][eE][sS]) return 0 ;;
-    *) return 1 ;;
-  esac
-}
 
 
 # -------- MAIN --------
