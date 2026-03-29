@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.0.2"
+SCRIPT_VERSION="2.1.0"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -156,6 +156,55 @@ EOF
   fi
 }
 
+# -------- HEALTH CHECK --------
+healthcheck() {
+  log "Starte Healthcheck..."
+
+  # RAM
+  log "RAM-Auslastung:"
+  free -h
+
+  # Load
+  log "Systemlast:"
+  uptime
+
+  # Disk Usage
+  log "Speicherplatz:"
+  df -h
+
+  # SMART (nur wenn installiert)
+  if command -v smartctl >/dev/null 2>&1; then
+    log "SMART Status (sda):"
+    smartctl -H /dev/sda || true
+  else
+    log "smartctl nicht installiert – überspringe Disk Health"
+  fi
+
+  log "Healthcheck abgeschlossen"
+}
+
+# -------- Check Reboot Requiered --------
+check_reboot_required() {
+  if [ -f /var/run/reboot-required ]; then
+    echo
+    echo "############################################################"
+    echo "#                                                          #"
+    echo "#   ⚠️  NEUSTART ERFORDERLICH!                             #"
+    echo "#                                                          #"
+    echo "#   Es wurden sicherheitsrelevante Updates installiert.    #"
+    echo "#   Das System läuft noch mit alten Komponenten.           #"
+    echo "#                                                          #"
+    echo "#   → Ein Neustart wird dringend empfohlen!                #"
+    echo "#                                                          #"
+    echo "############################################################"
+    echo
+  else
+    log "Kein Neustart erforderlich"
+  fi
+}
+
+
+
 # -------- MAIN --------
 main() {
   require_root
@@ -174,6 +223,19 @@ main() {
   set_timezone
   reload_postfix
   install_launcher
+
+  echo
+  read -r -p "Healthcheck durchführen? [y/N] " answer
+  case "$answer" in
+    [yY]|[yY][eE][sS])
+      healthcheck
+      ;;
+    *)
+      log "Healthcheck übersprungen"
+      ;;
+  esac
+
+  check_reboot_required
 
   log "Fertig"
 }
