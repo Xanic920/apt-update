@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.3.2"
+SCRIPT_VERSION="2.4.0"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -187,6 +187,43 @@ check_pihole_update() {
   fi
 }
 
+# -------- Jellyfin --------
+check_jellyfin() {
+  if systemctl list-unit-files | grep -q jellyfin; then
+    log "Jellyfin erkannt – prüfe Zustand..."
+
+    # Service prüfen
+    if ! systemctl is-active jellyfin >/dev/null 2>&1; then
+      log "Jellyfin läuft aktuell nicht"
+
+      echo
+      if prompt_yes_no "Jellyfin jetzt starten? [y/N] "; then
+        log "Starte Jellyfin..."
+        systemctl start jellyfin
+      else
+        log "Jellyfin Start übersprungen"
+      fi
+    else
+      log "Jellyfin läuft"
+    fi
+
+    # Transcode Cleanup nur wenn groß
+    if [ -d /var/lib/jellyfin/transcodes ]; then
+      local size
+      size=$(du -s /var/lib/jellyfin/transcodes | awk '{print $1}')
+
+      if [ "$size" -gt 500000 ]; then
+        log "Transcode-Cache groß → bereinige"
+        find /var/lib/jellyfin/transcodes -type f -mtime +1 -delete
+      else
+        log "Transcode-Cache klein → überspringe"
+      fi
+    fi
+
+  else
+    log "Jellyfin nicht installiert – überspringe"
+  fi
+}
 
 
 # -------- LAUNCHER --------
