@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="2.4.1"
+SCRIPT_VERSION="2.4.2"
 LOG_DIR="/var/log/xanic/xupdate"
 LOG_FILE=""
 
@@ -192,7 +192,22 @@ check_jellyfin() {
   if systemctl list-unit-files | grep -q jellyfin; then
     log "Jellyfin erkannt – prüfe Zustand..."
 
-    # Service prüfen
+    # -------- AUTOSTART CHECK --------
+    if systemctl is-enabled jellyfin >/dev/null 2>&1; then
+      log "Jellyfin Autostart ist aktiviert"
+    else
+      log "Jellyfin Autostart ist deaktiviert"
+
+      echo
+      if prompt_yes_no "Jellyfin beim Systemstart automatisch starten? [y/N] "; then
+        log "Aktiviere Autostart für Jellyfin..."
+        systemctl enable jellyfin
+      else
+        log "Autostart bleibt deaktiviert"
+      fi
+    fi
+
+    # -------- SERVICE STATUS --------
     if ! systemctl is-active jellyfin >/dev/null 2>&1; then
       log "Jellyfin läuft aktuell nicht"
 
@@ -207,7 +222,7 @@ check_jellyfin() {
       log "Jellyfin läuft"
     fi
 
-    # Transcode Cleanup nur wenn groß
+    # -------- TRANSCODE CLEANUP --------
     if [ -d /var/lib/jellyfin/transcodes ]; then
       local size
       size=$(du -s /var/lib/jellyfin/transcodes | awk '{print $1}')
